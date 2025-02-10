@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">anti_theft</string>
+    <string name="hello_app">this is a console control!</string>
+    <string name="verify_button">ok</string>
+</resources>
