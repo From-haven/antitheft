@@ -152,7 +152,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         // button init
         if (mySwitch_frist.isChecked) {
             Toast.makeText(this, "Switch đang bật", Toast.LENGTH_SHORT).show()
-            startNewTimer()
+            //startNewTimer()
         } else {
             Toast.makeText(this, "Switch đang tắt", Toast.LENGTH_SHORT).show()
             pauseTimer()
@@ -164,14 +164,13 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 Toast.makeText(this, "start!", Toast.LENGTH_SHORT).show()
                 startNewTimer()
                 onResume()
-                wakeLock.acquire()
+                //wakeLock.acquire()
             } else {
                 Toast.makeText(this, "end!", Toast.LENGTH_SHORT).show()
                 resetTimer()
                 onPause()
                 statusOff()
-                ringtone?.stop()
-                wakeLock.release()
+                //wakeLock.release()
                 stopSound()
                 //stopService(Intent(this, MyForegroundService::class.java))//
             }
@@ -244,15 +243,15 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 gravity[2] = alpha * gravity[2] + (1 - alpha) * rawZ
 
                 // Làm tròn số đến 2 chữ số sau dấu phẩy
-                val roundedX = String.format("%.2f", gravity[0])
-                val roundedY = String.format("%.2f", gravity[1])
-                val roundedZ = String.format("%.2f", gravity[2])
+//                val roundedX = String.format("%.2f", gravity[0])
+//                val roundedY = String.format("%.2f", gravity[1])
+//                val roundedZ = String.format("%.2f", gravity[2])
 
-                val checkX = roundedX.toFloat()
-                val checkY = roundedY.toFloat()
-                val checkZ = roundedZ.toFloat()
+                val checkX = gravity[0]
+                val checkY = gravity[1]
+                val checkZ = gravity[2]
 
-                textView.text = "accerlerator:\nX: $roundedX\nY: $roundedY\nZ: $roundedZ"
+                textView.text = "accerlerator:\nX: $checkX\nY: $checkY\nZ: $checkZ"
 
                 //algorithm in this function are dangerous
                 if(mySwitch_frist.isChecked) {
@@ -262,9 +261,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                             resetTimer()
                             startNewTimer()
                         }
-                        X = roundedX.toFloat()
-                        Y = roundedY.toFloat()
-                        Z = roundedZ.toFloat()
+                        X = checkX
+                        Y = checkY
+                        Z = checkZ
                     }else{
                         if(abs((checkX - X)) > 0.04f && abs((checkY - Y)) > 0.04f && abs((checkZ - Z)) > 0.04f)
                         {
@@ -384,9 +383,11 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         if(valuelist == 1) {
             if (mediaPlayer.isPlaying) {
                 mediaPlayer.stop() // 🔊 Play audio
+//                mediaPlayer.reset()
+//                mediaPlayer.prepare()
             }
         }else{
-            ringtone?.stop()
+                ringtone?.stop()
         }
     }
     //test module
