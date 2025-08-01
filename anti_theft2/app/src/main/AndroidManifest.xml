@@ -33,6 +33,12 @@
             </intent-filter>
         </activity>
 
+        <service
+            android:name=".MyForegroundService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="location"/>
+<!--        mục foregroundServiceType là điều kiện cần để kích hoạt các dịch vụ cho mọi thứ đăng kí-->
     </application>
 
 </manifest>
