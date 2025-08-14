@@ -84,7 +84,7 @@ class MyForegroundService : Service(), SensorEventListener {
         }
 
         // Khởi tạo wakelock
-        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        val powerManager = getSystemService(POWER_SERVICE) as PowerManager
         wakeLock = powerManager.newWakeLock(
             PowerManager.PARTIAL_WAKE_LOCK,
             "AntiTheftApp::MyWakelockTag"
@@ -92,19 +92,52 @@ class MyForegroundService : Service(), SensorEventListener {
         wakeLock?.acquire()
 
 
-        //alarm system
-        val alarmUri: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
-        val ringtoneUri = alarmUri ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-        ringtone = RingtoneManager.getRingtone(applicationContext, ringtoneUri)
+        if (valuelist == 1) {
+            val afd = resources.openRawResourceFd(R.raw.sound_alarm)
+            mediaPlayer = MediaPlayer()
+
+            mediaPlayer.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+            afd.close()
+
+            mediaPlayer.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)  // Quan trọng: sử dụng đúng kênh âm thanh báo thức
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+            )
+            mediaPlayer.isLooping  = true
+            mediaPlayer.prepare()
+        }else if(valuelist == 2){
+            //alarm system
+            val alarmUri: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+            val ringtoneUri = alarmUri ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            ringtone = RingtoneManager.getRingtone(applicationContext, ringtoneUri)
 
 
-        //other alarm_sound system
-        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        val result = audioManager.requestAudioFocus(
-            { /* Audio focus change listener */ },
-            AudioManager.STREAM_ALARM,
-            AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
-        )
+            //other alarm_sound system
+            val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
+            val result = audioManager.requestAudioFocus(
+                { /* Audio focus change listener */ },
+                AudioManager.STREAM_ALARM,
+                AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
+            )
+        }else if(valuelist == 3) {
+            val afd = resources.openRawResourceFd(R.raw.iphone_original_ringtone)
+            mediaPlayer = MediaPlayer()
+
+            mediaPlayer.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+            afd.close()
+
+            mediaPlayer.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)  // Quan trọng: sử dụng đúng kênh âm thanh báo thức
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+            )
+            mediaPlayer.isLooping = true
+            mediaPlayer.prepare()
+        }
+
 //        mediaPlayer = MediaPlayer.create(this, R.raw.sound_alarm)
 //        mediaPlayer.setAudioAttributes(
 //            AudioAttributes.Builder()
@@ -113,20 +146,7 @@ class MyForegroundService : Service(), SensorEventListener {
 //                .build()
 //        )// mediaPlayer.isLooping = true  // Nếu cần lặp lại như báo thức
 
-        val afd = resources.openRawResourceFd(R.raw.sound_alarm)
-        mediaPlayer = MediaPlayer()
 
-        mediaPlayer.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
-        afd.close()
-
-        mediaPlayer.setAudioAttributes(
-            AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_ALARM)  // Quan trọng: sử dụng đúng kênh âm thanh báo thức
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .build()
-        )
-
-        mediaPlayer.prepare()
 
     }
     interface SensorCallback {
@@ -141,7 +161,7 @@ class MyForegroundService : Service(), SensorEventListener {
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Anti_theft")
             .setContentText("count down timer: ${timeLeftInMillis/1000}")
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.mipmap.ic_launcher_foreground)
             .setOngoing(true) // Không cho người dùng vuốt tắt
             .build()
 
@@ -160,7 +180,7 @@ class MyForegroundService : Service(), SensorEventListener {
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Anti_theft")
             .setContentText("count down timer: ${timeLeftInMillis/1000}")
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.mipmap.ic_launcher_foreground)
             .setContentIntent(pendingIntent)
             .setOngoing(true) // Không cho người dùng vuốt tắt
             .build()
@@ -228,7 +248,7 @@ class MyForegroundService : Service(), SensorEventListener {
                 //algorithm in this function are dangerous
 
                 if(!isRunning) { //check before system is really turn on alarm
-                    if(abs((checkX - X)) > 0.001f*seekbarValue && abs((checkY - Y)) > 0.001f*seekbarValue && abs((checkZ - Z)) > 0.001f*seekbarValue)
+                    if(abs((checkX - X)) > 0.003f*(101-seekbarValue) && abs((checkY - Y)) > 0.003f*(101-seekbarValue) && abs((checkZ - Z)) > 0.001f*(101-seekbarValue))
                     {
                         resetTimer()
                         startNewTimer()
@@ -238,7 +258,7 @@ class MyForegroundService : Service(), SensorEventListener {
                     Z = checkZ
 
                 }else{
-                    if(abs((checkX - X)) > 0.001f*seekbarValue && abs((checkY - Y)) > 0.001f*seekbarValue && abs((checkZ - Z)) > 0.001f*seekbarValue)
+                    if(abs((checkX - X)) > 0.002f*(101-seekbarValue) && abs((checkY - Y)) > 0.002f*(101-seekbarValue) && abs((checkZ - Z)) > 0.001f*(101-seekbarValue))
                     {
                         playSound()
                         Log.d("prepare play sound","~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
@@ -290,17 +310,19 @@ class MyForegroundService : Service(), SensorEventListener {
     }
 
     private fun playSound() {
-        if(valuelist == 1) {
+        if(valuelist == 1 || valuelist == 3) {
             if (!mediaPlayer.isPlaying) {
                 mediaPlayer.start() // 🔊 Play audio
             }
-        }else{
+        }else {
             ringtone?.play()
         }
     }
+    //set user's sound
+
 
     private fun stopSound() {
-        if(valuelist == 1) {
+        if(valuelist == 1 || valuelist == 3) {
             if (mediaPlayer.isPlaying) {
                 mediaPlayer.stop() // 🔊 Play audio
 //                mediaPlayer.reset()
@@ -323,6 +345,7 @@ class MyForegroundService : Service(), SensorEventListener {
             val saveTime_1 = lines[0].split("=").getOrNull(1)?.toLongOrNull()
             val valueList_1 = lines[1].split("=").getOrNull(1)?.toIntOrNull()
             val seekbarValue_1 = lines[2].split("=").getOrNull(1)?.toIntOrNull()
+            //have a poiter themeslist at line 3 (lines[2])
             if (saveTime_1 != null && valueList_1 != null && seekbarValue_1 != null) {
                 saveTime = saveTime_1
                 timeLeftInMillis = saveTime

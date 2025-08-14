@@ -7,13 +7,12 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="backgroundColor">#DADADA</color>
-    <color name="toolbar">#CECECE</color>
-    <color name="FABoff">@color/card_bg</color>
+    <color name="backgroundColor">#282828</color>
+    <color name="toolbar">#212121</color>
+    <color name="FABoff">#808080</color>
     <color name="FABon">#FF5722</color>
-    <color name="textcolor">#FF000000</color>
-    <color name="card_bg">#FFFFFF</color>
+    <color name="textcolor">#FFFFFFFF</color>
+    <color name="card_bg">#1E1E1E</color>
     <color name="divider_dark">#333333</color>
     <color name="invisiblecolor">#00FFFFFF</color>
-
 </resources>

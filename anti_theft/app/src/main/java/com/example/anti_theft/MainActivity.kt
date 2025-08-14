@@ -7,14 +7,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.EditText
 import android.widget.Button
-import android.widget.Switch
 import android.widget.Toast
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.anti_theft.ui.theme.Anti_theftTheme
-import android.widget.SeekBar
 //count time
 import android.os.CountDownTimer
 import android.graphics.Color
@@ -31,9 +24,16 @@ import android.os.IBinder
 import android.os.PowerManager
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.ActionBarDrawerToggle
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.net.toUri
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
+import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.navigation.NavigationView
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
     //value of sensor accelerator
@@ -49,26 +49,20 @@ class MainActivity : AppCompatActivity() {
     //algorithm
     private var isstatus = false
     private lateinit var textofstatus: TextView
-
-    private lateinit var listofbutton: Button
-    private lateinit var textofsellectsound: TextView
     private var valuelist: Int = 1   // value default
 
+    //themeslist
+    private var themeslist: Int = 1
+
     private lateinit var editTextofTime: EditText
-    private lateinit var getTimeButton: Button
     private lateinit var openPDFButton: Button
-    private lateinit var mySwitch_frist: Switch
-    private lateinit var textsettimeinit: TextView
     private var ringtone: android.media.Ringtone? = null
     private lateinit var wakeLock: PowerManager.WakeLock
     //list of soundalarm
     val options = arrayOf("sound alarm", "sound your alarm system")
     //seekbar
-    private lateinit var seekbar: SeekBar
-    private lateinit var textViewSeekBar: TextView
     private var seekbarValue : Int = 4
     //beta
-    private lateinit var everyTimeSwitch: Switch
     private val REQUEST_CODE_ALL = 101
 
     //reciving fro foreGroundservice
@@ -86,7 +80,7 @@ class MainActivity : AppCompatActivity() {
                     runOnUiThread {
                         //build UI at here
                         textView.text = "accerlerator:\nX: $x\nY: $y\nZ: $z"
-                        textoftime.text = "Time left: ${timeLeft / 1000} s"
+                        textoftime.text = getString(R.string.time_left) + " ${timeLeft / 1000}s"
                         if(isrunning) {
                             statusOn()
                         }else{
@@ -101,12 +95,32 @@ class MainActivity : AppCompatActivity() {
             isBound = false
             myService = null
         }
-    }   
+    }
 
+    //UI/UX
+    private lateinit var drawerLayout: DrawerLayout
+    private lateinit var navigationView: NavigationView
+    private lateinit var toolbar: MaterialToolbar
+    private lateinit var toggle: ActionBarDrawerToggle
+    //FAB
+    private lateinit var fab: FloatingActionButton
+    private var isOn = false
+    //language
+    private val prefs by lazy { getSharedPreferences("settings", MODE_PRIVATE) }
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        //savefile before readfile to ignore crash with reason file not found
+        try{
+            readDataFromFile()
+            loadLanguage_first()
+            setThemes()
+        } catch (e: Exception) {
+            SavetoFile(saveTime,valuelist,seekbarValue,themeslist)
+            saveLanguage("en")
+        }
         setContentView(R.layout.activity_main)
 
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
@@ -114,77 +128,64 @@ class MainActivity : AppCompatActivity() {
 
         textView = findViewById(R.id.textview8) // Kết nối TextView trong XML
         textoftime = findViewById(R.id.textView7)
-        textsettimeinit = findViewById(R.id.textView3)
         textofstatus = findViewById(R.id.textView6)
-        textofsellectsound = findViewById(R.id.textView5)
-        //val textView = findViewById<TextView>(R.id.textView6) // connect textView status sound alarm
-        editTextofTime = findViewById(R.id.inputField)
-        getTimeButton = findViewById(R.id.button3)
-        listofbutton = findViewById(R.id.button2)
-        openPDFButton = findViewById(R.id.button)
+        openPDFButton = findViewById(R.id.howtouse)
+        openPDFButton.setOnClickListener {
+            openPdfFromUrl(this, getString(R.string.pdfhowtouse))
+        }
 
-        //seekbar
-        seekbar = findViewById(R.id.seekBar)
-        textViewSeekBar = findViewById(R.id.textView2)
         //alarm system
         val alarmUri: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
         val ringtoneUri = alarmUri ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
         ringtone = RingtoneManager.getRingtone(applicationContext, ringtoneUri)
 
-        listofbutton.setOnClickListener{
+        //UI/UX
+        // Ánh xạ view
+        drawerLayout = findViewById(R.id.drawer_layout)
+        navigationView = findViewById(R.id.nav_view)
+        toolbar = findViewById(R.id.toolbar)
 
-            // Tạo AlertDialog
-            val builder = AlertDialog.Builder(this)
-            builder.setTitle("choose your sound")
-            builder.setItems(options) { _, which ->
-                val selectedOption = options[which]
-                valuelist = which + 1
-                textofsellectsound.text = "Name file: $selectedOption"
-                SavetoFile(timeLeftInMillis,valuelist,seekbarValue)
+        // Gắn toolbar
+        setSupportActionBar(toolbar)
+
+        // Setup toggle cho Drawer
+        toggle = ActionBarDrawerToggle(
+            this,
+            drawerLayout,
+            toolbar,
+            R.string.navigation_drawer_open,
+            R.string.navigation_drawer_close
+        )
+        drawerLayout.addDrawerListener(toggle)
+        toggle.syncState()
+
+        // Xử lý khi click vào menu item
+        navigationView.setNavigationItemSelectedListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.nav_home -> {
+                    //no need to do anything
+                }
+
+                R.id.nav_settings -> {
+                    pause()
+                    stopService(Intent(this, MyForegroundService::class.java))
+                    statusOff()
+                    val intent = Intent(this, Settings::class.java)
+                    startActivity(intent)
+                }
             }
-            builder.show()
+            drawerLayout.closeDrawers()
+            true
         }
-
-        //kiểm tra có quyền thông báo chưa
-        checkAndRequestPermissions()
-        //connect switch in xml
-        mySwitch_frist = findViewById(R.id.switch1)
-
-        //savefile before readfile to ignore crash with reason file not found
-        try{
-            readDataFromFile()
-        } catch (e: Exception) {
-            SavetoFile(saveTime,valuelist,seekbarValue)
-        }
-        //read file
-        //readDataFromFile()
-
-        //seekbar progess
-        // Đọc giá trị ban đầu:
-        textViewSeekBar.text = "Unsensitive: $seekbarValue"
-        seekbar.progress = seekbarValue
-
-        // Theo dõi khi người dùng kéo
-        seekbar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                textViewSeekBar.text = "Unsensitive: $progress"
-                seekbarValue = progress
-            }
-
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {
-                // khi bắt đầu kéo
-            }
-
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                updateText()
-                SavetoFile(saveTime,valuelist,seekbarValue)
-            }
-        })
-
-        // sử lí nút
-        mySwitch_frist.setOnCheckedChangeListener { _, isChecked ->
-            val intent = Intent(this, MyForegroundService::class.java)
-            if (isChecked) {
+        //FAB
+        fab = findViewById(R.id.fab)
+        fab.setOnClickListener {
+            isOn = !isOn
+            if (isOn) {
+                // Trạng thái bật
+                fab.backgroundTintList =
+                    ContextCompat.getColorStateList(this, R.color.FABon)
+                //logic here
                 Toast.makeText(this, "start!", Toast.LENGTH_SHORT).show()
                 //startNewTimer()
                 //wakeLock.acquire()
@@ -192,8 +193,11 @@ class MainActivity : AppCompatActivity() {
                 ContextCompat.startForegroundService(this, intent)
                 start()
                 //startService(Intent(this, MyForegroundService::class.java))
-
             } else {
+                // Trạng thái tắt
+                fab.backgroundTintList =
+                    ContextCompat.getColorStateList(this, R.color.FABoff)
+                //logic here
                 Toast.makeText(this, "end!", Toast.LENGTH_SHORT).show()
                 //resetTimer()
 
@@ -203,37 +207,15 @@ class MainActivity : AppCompatActivity() {
                 //stopService(intent)
                 pause()
                 stopService(Intent(this, MyForegroundService::class.java))
-
                 statusOff()
             }
-        }//~~~
-        openPDFButton.setOnClickListener {
-            openPdfFromUrl(this, "https://drive.google.com/viewerng/viewer?embedded=true&url=https%3A%2F%2Fdrive.google.com%2Fuc%3Fexport%3Ddownload%26id%3D1JxOQwGCgecg5CxIJhaTlgHCXVTFtiqRz")
         }
+
+        //kiểm tra có quyền thông báo chưa
+        checkAndRequestPermissions()
+
         //update Text
         updateText()
-
-        //button settime
-        getTimeButton.setOnClickListener {
-            val settimeoninput = getTimeFromInput()
-            if(settimeoninput != 0L)
-            {
-                if(settimeoninput <= 3L)
-                {
-                    Toast.makeText(this, "time shouldn't sorter than 3 second", Toast.LENGTH_SHORT).show()
-                }else{
-                    mySwitch_frist.isChecked = false
-                    updateTime(settimeoninput * 1000)
-                    SavetoFile(settimeoninput * 1000, valuelist,seekbarValue)
-                }
-            }else{
-                Toast.makeText(this, "time shouldn't equal to zero or error systax", Toast.LENGTH_SHORT).show()
-            }
-        }
-        //updateTime(4000)//this function is to te
-
-        //sử lí bộ đếm giờ
-        //startnewtimer là khởi tạo lại từ đầu. starttimer là tiếp tục chạy,resume chưa sài(dùng để code thuật toán di chuyển)
 
         //test module
 
@@ -279,41 +261,12 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
     }
 
-    private fun getTimeFromInput(): Long {
-        val inputText = editTextofTime.text.toString().trim()
-        return if (inputText.isNotEmpty()) {
-            editTextofTime.text.clear()
-            inputText.toLongOrNull() ?: 0L
-        } else {
-            0L
-        }
-    }
-
     //sử lí bộ đếm giờ
     private fun updateText() {
-        textoftime.text = "Time left: ${timeLeftInMillis / 1000} s"
-        textofsellectsound.text = "Name file: ${options[valuelist - 1]}"
-        textsettimeinit.text = "Time set: ${timeLeftInMillis / 1000}s"
-        textViewSeekBar.text = "Unsensitive: $seekbarValue"
-        mySwitch_frist.isChecked = false
+        val texttest = getString(R.string.time_left) + " ${timeLeftInMillis / 1000}s"
+        textoftime.text = texttest
+//        textsettimeinit.text = "Time set: ${timeLeftInMillis / 1000}s" /////
 
-    }
-
-    private fun updateTime(newTimeInMillis: Long) {
-        countDownTimer?.cancel() // Hủy bộ đếm nếu đang chạy
-        saveTime = newTimeInMillis
-        timeLeftInMillis = newTimeInMillis // Cập nhật thời gian mới
-        updateText() // Cập nhật giao diện
-        //resetTimer()
-//        startNewTimer()
-        mySwitch_frist.isChecked = false
-        //pauseTimer()
-        //onPause()
-        textsettimeinit.text = "Time set: ${timeLeftInMillis / 1000}s"
-        //my experience:
-        //  cái này nó liên quan tới nhúng nên khi mà ba code thì bạn sẽ ko hiểu cách n hoạt động và thực vậy
-        //tôi đã ngồi đây hơn hai tiếng chỉ để sửa 2 bug (đổi đơn vị và cái nhúng đó), về phần nhúng thì do nó là class
-        // sâu trong máy, và bằng chứng là tôi đã không tắt đi hàm startNewTimer() tôi đã thử đi thử lại nhiều lần và tôi đã nhận ra điều đó
     }
 
 
@@ -339,16 +292,6 @@ class MainActivity : AppCompatActivity() {
             permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
         }
 
-        // Kiểm tra quyền vị trí (cần cho foreground service location)
-//        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-//            != PackageManager.PERMISSION_GRANTED) {
-//            permissionsToRequest.add(Manifest.permission.ACCESS_FINE_LOCATION)
-//        }
-//
-//        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
-//            != PackageManager.PERMISSION_GRANTED) {
-//            permissionsToRequest.add(Manifest.permission.ACCESS_COARSE_LOCATION)
-//        }
 
         // Nếu còn quyền nào chưa được cấp, yêu cầu cấp
         if (permissionsToRequest.isNotEmpty()) {
@@ -371,12 +314,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun SavetoFile(SaveTime : Long,Vallist : Int, Sensitive: Int) {
-        val data = "SaveTime=${SaveTime}\nVallist=${Vallist}\nSensitive=$Sensitive"
+    private fun SavetoFile(SaveTime : Long,Vallist : Int, Sensitive: Int,Themeslist: Int) {
+        val data = "SaveTime=${SaveTime}\nVallist=${Vallist}\nSensitive=$Sensitive\nThemes=$Themeslist"
         openFileOutput("data.txt", Context.MODE_PRIVATE).use {
             it.write(data.toByteArray())
         }
-
     }
 
     //đọc file đã lưu trước đó (có một cái tương tự trong MyForeGroundservice)
@@ -389,11 +331,15 @@ class MainActivity : AppCompatActivity() {
             val saveTime_1 = lines[0].split("=").getOrNull(1)?.toLongOrNull()
             val valueList_1 = lines[1].split("=").getOrNull(1)?.toIntOrNull()
             val seekbarValue_1 = lines[2].split("=").getOrNull(1)?.toIntOrNull()
+            val themeslist_1 = lines[3].split("=").getOrNull(1)?.toIntOrNull()
             if (saveTime_1 != null && valueList_1 != null && seekbarValue_1 != null) {
                 saveTime = saveTime_1
                 timeLeftInMillis = saveTime
                 valuelist = valueList_1
                 seekbarValue = seekbarValue_1
+                if (themeslist_1 != null) {
+                    themeslist = themeslist_1
+                }//nó kiểm tra null nhưng mà mấy cái trước có kiểm tra đâu?
             }
 
         } else {
@@ -421,22 +367,60 @@ class MainActivity : AppCompatActivity() {
         builder.setNegativeButton("Hủy", null)
         builder.show()
     }
+    //this is UI/UX
+    override fun onBackPressed() {
+        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            drawerLayout.closeDrawer(GravityCompat.START)
+        } else {
+            super.onBackPressed()
+        }
+    }
     //test module
+    //set your language
+    fun saveLanguage(lang: String) {
+        prefs.edit().putString("app_lang", lang).apply()
+    }
 
-}
+    fun loadLanguage() {
+        val lang = prefs.getString("app_lang", "en") // default English
+        setLocale(lang ?: "en")
+    }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name",
-        modifier = modifier
-    )
-}
+    fun setLocale(languageCode: String) {
+        val locale = Locale(languageCode)
+        Locale.setDefault(locale)
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    Anti_theftTheme {
-        Greeting("Android")
+        val config = resources.configuration
+        config.setLocale(locale)
+
+        resources.updateConfiguration(config, resources.displayMetrics)
+
+        // Optional: restart activity to apply changes
+        recreate()
+    }
+
+    fun loadLanguage_first() {
+        val lang = prefs.getString("app_lang", "en") // default English
+        setLocale_first(lang ?: "en")
+    }
+
+    fun setLocale_first(languageCode: String) {
+        val locale = Locale(languageCode)
+        Locale.setDefault(locale)
+
+        val config = resources.configuration
+        config.setLocale(locale)
+
+        resources.updateConfiguration(config, resources.displayMetrics)
+    }
+
+    private fun setThemes() {
+        if(themeslist == 1){
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+        }else if(themeslist == 2 ){
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+        }else{
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+        }
     }
 }

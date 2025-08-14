@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.anti_theft"
-        minSdk = 24
+        minSdk = 29
         targetSdk = 35
         versionCode = 1
         versionName = "1.2.1"
@@ -57,4 +57,6 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    implementation("com.google.android.material:material:1.12.0")
+
 }
