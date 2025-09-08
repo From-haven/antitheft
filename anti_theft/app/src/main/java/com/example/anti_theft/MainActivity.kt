@@ -34,6 +34,7 @@ import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
 import java.util.Locale
+import android.provider.Settings
 
 class MainActivity : AppCompatActivity() {
     //value of sensor accelerator
@@ -54,7 +55,6 @@ class MainActivity : AppCompatActivity() {
     //themeslist
     private var themeslist: Int = 1
 
-    private lateinit var editTextofTime: EditText
     private lateinit var openPDFButton: Button
     private var ringtone: android.media.Ringtone? = null
     private lateinit var wakeLock: PowerManager.WakeLock
@@ -183,8 +183,7 @@ class MainActivity : AppCompatActivity() {
             isOn = !isOn
             if (isOn) {
                 // Trạng thái bật
-                fab.backgroundTintList =
-                    ContextCompat.getColorStateList(this, R.color.FABon)
+                fab.backgroundTintList = ContextCompat.getColorStateList(this, R.color.FABon)
                 //logic here
                 Toast.makeText(this, "start!", Toast.LENGTH_SHORT).show()
                 //startNewTimer()
@@ -195,8 +194,7 @@ class MainActivity : AppCompatActivity() {
                 //startService(Intent(this, MyForegroundService::class.java))
             } else {
                 // Trạng thái tắt
-                fab.backgroundTintList =
-                    ContextCompat.getColorStateList(this, R.color.FABoff)
+                fab.backgroundTintList = ContextCompat.getColorStateList(this, R.color.FABoff)
                 //logic here
                 Toast.makeText(this, "end!", Toast.LENGTH_SHORT).show()
                 //resetTimer()
@@ -292,6 +290,16 @@ class MainActivity : AppCompatActivity() {
             permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
         }
 
+        //quyền sử dụng chay nen
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val packageName = packageName
+            val powerManager = getSystemService(PowerManager::class.java)
+            if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
+                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+                intent.data = Uri.parse("package:$packageName")
+                startActivity(intent)
+            }
+        }
 
         // Nếu còn quyền nào chưa được cấp, yêu cầu cấp
         if (permissionsToRequest.isNotEmpty()) {
