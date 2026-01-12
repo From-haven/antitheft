@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">anti theft</string>
+    <string name="hello_app">this is a console control!</string>
+    <string name="verify_button">ok</string>
+    <string name="navigation_drawer_open">navigation_drawer_open</string>
+    <string name="navigation_drawer_close">navigation_drawer_close</string>
+    <string name="time_set">Time set</string>
+    <string name="enter_your_time_set">Enter your time set</string>
+    <string name="choose_file_alarm">choose file alarm</string>
+    <string name="your_themes">Your Themes :</string>
+    <string name="theme_system_set">your system set</string>
+    <string name="theme_day">light</string>
+    <string name="theme_dark">dark</string>
+    <string name="language_english">Language :english</string>
+    <string name="your_language">Your language</string>
+    <string name="How_to_use">How to use</string>
+    <string name="reset_setting">Reset setting</string>
+    <string name="sensitive">Sensitive :</string>
+    <string name="file_name">File name :</string>
+    <string name="time_left">Time left :</string>
+    <string name="home">Home</string>
+    <string name="setting">settings</string>
+    <string name="pdfhowtouse">https://drive.google.com/file/d/1JzGBlNeR4oKa4hvkZDR0oTgiPSsBCdbr/view?usp=drive_link</string>
+</resources>
