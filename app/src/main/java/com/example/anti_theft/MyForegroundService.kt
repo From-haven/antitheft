@@ -266,7 +266,6 @@ class MyForegroundService : Service(), SensorEventListener {
                         X = checkX
                         Y = checkY
                         Z = checkZ
-                        Log.d("check system update","----------------------------------------------------")
                     }
                 }
             }
